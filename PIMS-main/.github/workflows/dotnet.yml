@@ -1,0 +1,102 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          SA_PASSWORD: ${{ secrets.MSSQLSECRET }}
+          ACCEPT_EULA: 'Y'
+        ports:
+          - 1433:1433
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+        dotnet-quality: 'preview' 
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore -o ${{env.DOTNET_ROOT}}/myapp
+    - name: List files in the repository
+      run: |
+          ls ${{ github.workspace }}           
+   # Это оставляем для интеграционных тестов
+   # - name: Change connectionstring in testsApplication and test settings
+   #  uses: microsoft/variable-substitution@v1
+   #   with:
+   #     files: '${{ github.workspace }}/tests/Application.IntegrationTests/appsettingsTest.json'
+   #  env:
+   #      ConnectionStrings.DatabaseConnection: ${{ secrets.DBCONNECTIONSTRING }}       
+    - name: Test
+      run: dotnet test --verbosity normal
+    - name: Publish
+      run: dotnet publish '${{ github.workspace }}/src/presentation/PIMS.Web/PIMS.Web.csproj' -c Release -o '${{ github.workspace }}/published'
+    - name: Change connectionstring in mainApplication
+      uses: microsoft/variable-substitution@v1
+      with:
+        files: '${{ github.workspace }}/published/appsettings.json'
+      env:
+        ConnectionStrings.MSSQLServer: ${{ secrets.PRODUCTIONDBCONNECTIONSTRRING }}
+    - name: Create directory
+      run: mkdir -p '${{ github.workspace }}/offline'
+    - name: Create App offline file
+      uses: "finnp/create-file-action@master"
+      env:
+        FILE_NAME: '${{ github.workspace }}/offline/app_offline.htm'
+        FILE_DATA: "Please, wait until web site update completed . . . "
+    - name: FTP Deploy with App offline
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+          # Deployment destination server & path. Formatted as protocol://domain.com:port/full/destination/path/
+          server: ${{ secrets.FTP_SERVER }}
+          # FTP account username
+          username: ${{ secrets.FTP_USERNAME }}
+          # FTP account password
+          password: ${{ secrets.FTP_PASSWORD }}
+          # The local folder to copy, defaults to root project folder
+          server-dir: httppims/
+          local-dir: '${{ github.workspace }}/offline/'
+    - name: FTP Deploy with App offline
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+          # Deployment destination server & path. Formatted as protocol://domain.com:port/full/destination/path/
+          server: ${{ secrets.FTP_SERVER }}
+          # FTP account username
+          username: ${{ secrets.FTP_USERNAME }}
+          # FTP account password
+          password: ${{ secrets.FTP_PASSWORD }}
+          # The local folder to copy, defaults to root project folder
+          server-dir: httppims/
+          local-dir: '${{ github.workspace }}/published/'
+    - name: Remove File
+      uses: JesseTG/rm@v1.0.3
+      with:
+        path: '${{ github.workspace }}/published/offline.htm'
+    - name: FTP Deploy with App offline
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+          # Deployment destination server & path. Formatted as protocol://domain.com:port/full/destination/path/
+          server: ${{ secrets.FTP_SERVER }}
+          # FTP account username
+          username: ${{ secrets.FTP_USERNAME }}
+          # FTP account password
+          password: ${{ secrets.FTP_PASSWORD }}
+          # The local folder to copy, defaults to root project folder
+          server-dir: httppims/
+          local-dir: '${{ github.workspace }}/published/'

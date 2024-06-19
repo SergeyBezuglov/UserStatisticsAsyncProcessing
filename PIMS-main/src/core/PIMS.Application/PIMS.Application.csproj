@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.6.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.6.0" />
+    <PackageReference Include="MediatR" Version="12.1.1" />
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0-preview.7.23375.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+     <ProjectReference Include="..\PIMS.Common\PIMS.Common.csproj" />
+     <ProjectReference Include="..\PIMS.Domain\PIMS.Domain.csproj" />
+     <ProjectReference Include="..\PIMS.Logger\PIMS.LoggerExtenstions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DomainBoundary\" />
+  </ItemGroup>
+
+</Project>
